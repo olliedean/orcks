@@ -63,7 +63,7 @@ export default async function Home() {
 
             <button
               type="button"
-              className="w-full bg-[#f425f4] hover:bg-[#f425f4]/90 text-white py-4 px-6 rounded-lg text-lg font-bold tracking-wide flex items-center justify-center gap-2 shadow-lg shadow-[#f425f4]/20 transition-all active:scale-[0.98]"
+              className="w-full bg-[#f425f4] hover:bg-[#f425f4]/90 text-white py-4 px-6 rounded-lg text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#f425f4]/20 cursor-pointer"
             >
               Start Local Session
               <FaArrowCircleRight className="text-xl" />
