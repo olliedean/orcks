@@ -4,8 +4,11 @@ import {
   MdMicExternalOn,
 } from "react-icons/md";
 import { RiGitRepositoryCommitsFill } from "react-icons/ri";
+import { getGitCommitFull } from "../lib/version";
 
-export default function Home() {
+export default async function Home() {
+  const commitFull = await getGitCommitFull()
+  const commitHash = commitFull?.slice(0, 8) ?? "unknown";
   return (
     <div className="min-h-screen flex flex-col bg-[#0f080f] text-white">
       <nav className="w-full px-6 py-4 flex items-center justify-between border-b border-white/10">
@@ -109,7 +112,16 @@ export default function Home() {
           Open source on GitHub
         </a>
         <div className="mt-2 text-[10px] uppercase text-white/10 font-bold">
-          <RiGitRepositoryCommitsFill className="inline-flex" /> Commit hash: <code className="font-mono text-xs bg-white/10 px-1.5 py-0.5 rounded">unknown</code>
+          <RiGitRepositoryCommitsFill className="inline-flex" /> Commit hash:{" "}
+          <a
+            target="_blank"
+            rel="noopener noreferrer"
+            href={`https://github.com/olliedean/orcks/commit/${commitFull}`}
+          >
+            <code className="font-mono text-xs bg-white/10 px-1.5 py-0.5 rounded">
+              {commitHash}
+            </code>
+          </a>
         </div>
       </footer>
     </div>
