@@ -5,15 +5,22 @@ import {
   MdMeetingRoom,
   MdMicExternalOn,
 } from "react-icons/md";
+import { RiGitRepositoryCommitsFill } from "react-icons/ri";
 import Link from "next/link";
 import { SocketStatus } from "./app/components/SocketStatus";
 import { useSocket } from "@/lib/socket-context";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const { socket } = useSocket();
+  const router = useRouter();
   const [latency, setLatency] = useState<number | null>(null);
   const [peersConnected, setPeersConnected] = useState<number>(0);
+  const [roomName, setRoomName] = useState<string>("");
+  const [isCreating, setIsCreating] = useState(false);
+  const [commitHash, setCommitHash] = useState<string | null>(null);
+  const [commitFull, setCommitFull] = useState<string | null>(null);
 
   useEffect(() => {
     function onPing() {
@@ -39,6 +46,27 @@ export default function Home() {
       socket.off("peers:count");
     };
   }, [socket]);
+
+  useEffect(() => {
+    fetch("/api/version")
+      .then((res) => res.json())
+      .then((data) => {
+        setCommitFull(data.commit);
+        setCommitHash(data.commit?.slice(0, 8) ?? "unknown");
+      })
+      .catch(() => {
+        setCommitHash("unknown");
+      });
+  }, []);
+
+  function createRoom() {
+    if (!roomName.trim() || isCreating) return;
+    
+    setIsCreating(true);
+    socket.emit("room:create", roomName.trim(), (roomCode: string) => {
+      router.push(`/app/waiting/${roomCode}`);
+    });
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#0f080f] text-white">
@@ -92,6 +120,9 @@ export default function Home() {
                   autoFocus
                   placeholder="e.g. ollie's private karaoke"
                   type="text"
+                  value={roomName}
+                  onChange={(e) => setRoomName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && createRoom()}
                   className="w-full bg-black/40 border border-white/10 rounded-lg py-4 pl-12 pr-4 text-lg font-medium focus:ring-2 focus:ring-[#f425f4]/20 focus:border-[#f425f4] focus:shadow-[0_0_15px_0_rgba(244,37,244,0.3)] outline-none transition-all text-white placeholder:text-slate-400"
                 />
               </div>
@@ -99,9 +130,11 @@ export default function Home() {
 
             <button
               type="button"
-              className="w-full bg-[#f425f4] hover:bg-[#f425f4]/90 text-white py-4 px-6 rounded-lg text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#f425f4]/20 cursor-pointer"
+              onClick={createRoom}
+              disabled={!roomName.trim() || isCreating}
+              className="w-full bg-[#f425f4] hover:bg-[#f425f4]/90 text-white py-4 px-6 rounded-lg text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#f425f4]/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Start Session
+              {isCreating ? "Creating..." : "Start Session"}
               <FaArrowCircleRight className="text-xl" />
             </button>
           </div>
@@ -140,15 +173,31 @@ export default function Home() {
       </main>
 
       <footer className="w-full py-8 text-center mt-auto">
-        <a
-          className="inline-flex items-center gap-2 text-white/30 hover:text-[#f425f4] transition-colors text-sm font-medium decoration-[#f425f4]/40 underline-offset-4"
-          href="https://github.com/olliedean/orcks"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <FaGithub className="h-4 w-4" />
-          Open source on GitHub
-        </a>
+        <div className="flex flex-col gap-3 items-center">
+          <a
+            className="inline-flex items-center gap-2 text-white/30 hover:text-[#f425f4] transition-colors text-sm font-medium decoration-[#f425f4]/40 underline-offset-4"
+            href="https://github.com/olliedean/orcks"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <FaGithub className="h-4 w-4" />
+            Open source on GitHub
+          </a>
+          {commitHash && (
+            <div className="inline-flex items-center gap-2 text-xs text-white/20">
+              <RiGitRepositoryCommitsFill className="h-4 w-4" />
+              <span className="uppercase tracking-widest">Commit</span>
+              <a
+                href={`https://github.com/olliedean/orcks/commit/${commitFull}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono hover:text-[#f425f4] transition-colors"
+              >
+                {commitHash}
+              </a>
+            </div>
+          )}
+        </div>
       </footer>
     </div>
   );
