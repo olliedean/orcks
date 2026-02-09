@@ -1,16 +1,45 @@
+"use client";
+
 import { FaArrowCircleRight, FaGithub } from "react-icons/fa";
 import {
   MdMeetingRoom,
   MdMicExternalOn,
 } from "react-icons/md";
-import { RiGitRepositoryCommitsFill } from "react-icons/ri";
-import { getGitCommitFull } from "../lib/version";
 import Link from "next/link";
 import { SocketStatus } from "./app/components/SocketStatus";
+import { useSocket } from "@/lib/socket-context";
+import { useEffect, useState } from "react";
 
-export default async function Home() {
-  const commitFull = await getGitCommitFull()
-  const commitHash = commitFull?.slice(0, 8) ?? "unknown";
+export default function Home() {
+  const { socket } = useSocket();
+  const [latency, setLatency] = useState<number | null>(null);
+  const [peersConnected, setPeersConnected] = useState<number>(0);
+
+  useEffect(() => {
+    function onPing() {
+      if (socket.io?.engine?.transport) {
+        const start = Date.now();
+        socket.emit("ping", () => {
+          const rtt = Date.now() - start;
+          setLatency(rtt / 2);
+        });
+      }
+    }
+
+    const latencyInterval = setInterval(onPing, 2000);
+
+    socket.on("peers:count", (count: number) => {
+      setPeersConnected(count);
+    });
+
+    socket.emit("peers:count:request");
+
+    return () => {
+      clearInterval(latencyInterval);
+      socket.off("peers:count");
+    };
+  }, [socket]);
+
   return (
     <div className="min-h-screen flex flex-col bg-[#0f080f] text-white">
       <nav className="w-full px-6 py-4 flex items-center justify-between border-b border-white/10">
@@ -83,7 +112,9 @@ export default async function Home() {
                 <span className="text-xs font-bold text-white/40 uppercase tracking-tighter">
                   Latency
                 </span>
-                <span className="text-sm font-semibold text-emerald-500">2ms</span>
+                <span className="text-sm font-semibold text-emerald-500">
+                  {latency !== null ? `${Math.round(latency)}ms` : "—"}
+                </span>
               </div>
               <div className="w-px h-8 bg-white/10" />
               <div className="flex flex-col items-center">
@@ -91,7 +122,7 @@ export default async function Home() {
                   Peers
                 </span>
                 <span className="text-sm font-semibold text-white">
-                  0 Connected
+                  {peersConnected} Connected
                 </span>
               </div>
               <div className="w-px h-8 bg-white/10" />
@@ -118,18 +149,6 @@ export default async function Home() {
           <FaGithub className="h-4 w-4" />
           Open source on GitHub
         </a>
-        <div className="mt-2 text-[10px] uppercase text-white/10 font-bold">
-          <RiGitRepositoryCommitsFill className="inline-flex" /> Commit hash:{" "}
-          <a
-            target="_blank"
-            rel="noopener noreferrer"
-            href={`https://github.com/olliedean/orcks/commit/${commitFull}`}
-          >
-            <code className="font-mono text-xs bg-white/10 px-1.5 py-0.5 rounded">
-              {commitHash}
-            </code>
-          </a>
-        </div>
       </footer>
     </div>
   );
