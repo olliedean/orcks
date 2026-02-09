@@ -19,11 +19,11 @@ export default function WaitingRoom() {
     
     const [roomName, setRoomName] = useState<string>("Loading...");
     const [guestCount, setGuestCount] = useState<number>(0);
+    const [guests, setGuests] = useState<Array<{ id: string; name?: string; image?: string | null }>>([]);
 
     useEffect(() => {
         if (!roomCode) return;
 
-        // Join the room
         socket.emit("room:join", roomCode, (response: any) => {
             if (response.success) {
                 setRoomName(response.room.name);
@@ -33,10 +33,16 @@ export default function WaitingRoom() {
             }
         });
 
-        // Listen for guest updates
-        socket.on("room:guests:update", (data: { count: number }) => {
-            setGuestCount(data.count);
-        });
+        socket.on(
+            "room:guests:update",
+            (data: {
+                count: number;
+                guests?: Array<{ id: string; name?: string; image?: string | null }>;
+            }) => {
+                setGuestCount(data.count);
+                setGuests(data.guests ?? []);
+            }
+        );
 
         return () => {
             socket.off("room:guests:update");
@@ -115,6 +121,45 @@ export default function WaitingRoom() {
                                         <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f425f4]" />
                                     </div>
                                     <span className="font-semibold text-white/80">{guestCount} {guestCount === 1 ? "Guest" : "Guests"} Connected</span>
+                                </div>
+
+                                <div className="flex items-center -space-x-2">
+                                    {guests.slice(0, 5).map((guest) => {
+                                        const initials = (guest.name ?? "")
+                                            .trim()
+                                            .split(/\s+/)
+                                            .filter(Boolean)
+                                            .slice(0, 2)
+                                            .map((p) => p[0]?.toUpperCase())
+                                            .join("") || "?";
+
+                                        return (
+                                            <div
+                                                key={guest.id}
+                                                className="relative w-8 h-8 rounded-full border border-white/10 bg-white/10 overflow-hidden flex items-center justify-center text-xs font-bold text-white"
+                                                title={guest.name ?? "Guest"}
+                                            >
+                                                {guest.image ? (
+                                                    <img
+                                                        src={guest.image}
+                                                        alt={guest.name ?? "Guest"}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    initials
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+
+                                    {guestCount > 5 && (
+                                        <div
+                                            className="relative w-8 h-8 rounded-full border border-white/10 bg-white/10 overflow-hidden flex items-center justify-center text-[10px] font-black text-white"
+                                            title={`${guestCount - 5} more`}
+                                        >
+                                            +{guestCount - 5}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
