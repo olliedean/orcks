@@ -5,6 +5,7 @@ import {
 } from "react-icons/md";
 import { RiGitRepositoryCommitsFill } from "react-icons/ri";
 import { getGitCommitFull } from "../lib/version";
+import Link from "next/link";
 
 export default async function Home() {
   const commitFull = await getGitCommitFull()
@@ -21,6 +22,14 @@ export default async function Home() {
           </h1>
         </div>
         <div className="flex items-center gap-2">
+
+          <Link
+            href="/join"
+            className="text-sm font-medium text-white/40 hover:text-[#f425f4] transition-colors px-3 py-1.5 rounded-full border border-white/10 hover:border-[#f425f4]/20"
+          >
+            I&apos;ve got a room code
+          </Link>
+
           <div className="flex items-center gap-2 bg-emerald-500/10 text-emerald-500 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider border border-emerald-500/20">
             <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
             websocket online
