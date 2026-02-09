@@ -4,6 +4,7 @@ import { RiGitRepositoryCommitsFill } from "react-icons/ri";
 import { MdMicExternalOn } from "react-icons/md";
 import { FiSettings } from "react-icons/fi";
 import { getGitCommitFull } from "@/lib/version";
+import { SocketStatus } from "./components/SocketStatus";
 
 export default async function AppLayout({
     children,
@@ -23,10 +24,7 @@ export default async function AppLayout({
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-emerald-500/10 text-emerald-500 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider border border-emerald-500/20">
-                            <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-                            websocket online
-                        </div>
+                        <SocketStatus />
                         <button
                             type="button"
                             className="text-sm font-medium text-white/40 hover:text-[#f425f4] transition-colors px-3 py-1.5 rounded-full border border-white/10 hover:border-[#f425f4]/20"

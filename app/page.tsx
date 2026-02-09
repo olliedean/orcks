@@ -6,6 +6,7 @@ import {
 import { RiGitRepositoryCommitsFill } from "react-icons/ri";
 import { getGitCommitFull } from "../lib/version";
 import Link from "next/link";
+import { SocketStatus } from "./app/components/SocketStatus";
 
 export default async function Home() {
   const commitFull = await getGitCommitFull()
@@ -30,10 +31,7 @@ export default async function Home() {
             I&apos;ve got a room code
           </Link>
 
-          <div className="flex items-center gap-2 bg-emerald-500/10 text-emerald-500 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider border border-emerald-500/20">
-            <span className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse" />
-            websocket online
-          </div>
+          <SocketStatus />
         </div>
       </nav>
 
@@ -74,7 +72,7 @@ export default async function Home() {
               type="button"
               className="w-full bg-[#f425f4] hover:bg-[#f425f4]/90 text-white py-4 px-6 rounded-lg text-lg font-bold flex items-center justify-center gap-2 shadow-lg shadow-[#f425f4]/20 cursor-pointer"
             >
-              Start Local Session
+              Start Session
               <FaArrowCircleRight className="text-xl" />
             </button>
           </div>
