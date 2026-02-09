@@ -1,7 +1,43 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import { FiCopy } from "react-icons/fi";
 import { IoMdPhonePortrait } from "react-icons/io";
+import { MdMicExternalOn } from "react-icons/md";
+
+/* eslint-disable @next/next/no-img-element */
+
+function makeRoomCode() {
+    const bytes = new Uint8Array(4);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 export default function WaitingRoom() {
+    const roomCode = useMemo(() => makeRoomCode(), []);
+    const origin = typeof window === "undefined" ? "" : window.location.origin;
+    const joinUrl = `${origin}/join/${roomCode}`;
+    const prettyLink = joinUrl.replace(/^https?:\/\//, "");
+
+    const qrUrl = useMemo(() => {
+        if (!origin) return "";
+        const data = encodeURIComponent(joinUrl);
+        return `https://api.qrserver.com/v1/create-qr-code/?size=768x768&format=svg&margin=0&data=${data}`;
+    }, [origin, joinUrl]);
+
+    const [copied, setCopied] = useState(false);
+
+    async function onCopy() {
+        if (!origin) return;
+        try {
+            await navigator.clipboard.writeText(joinUrl);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1200);
+        } catch {
+            console.error("Failed to copy join URL to clipboard");
+        }
+    }
+
     return (
         <div className="w-full h-full">
             <main className="min-h-full flex flex-col items-center justify-center px-4 py-10 max-w-6xl mx-auto w-full">
@@ -27,8 +63,8 @@ export default function WaitingRoom() {
                                         Room Link
                                     </label>
                                     <div className="flex items-center justify-center lg:justify-start gap-3">
-                                        <span className="text-3xl md:text-4xl font-mono font-bold text-[#f425f4] tracking-tight">
-                                            link
+                                        <span className="text-3xl font-mono font-bold text-[#f425f4] tracking-tight break-all">
+                                            {origin ? prettyLink : "loading…"}
                                         </span>
                                     </div>
                                 </div>
@@ -36,10 +72,12 @@ export default function WaitingRoom() {
                                 <div className="flex flex-wrap gap-3 mt-2">
                                     <button
                                         type="button"
-                                        className="flex-1 flex min-w-[140px] items-center justify-center gap-2 rounded-lg h-12 px-4 bg-[#f425f4] text-white text-sm font-bold transition-all hover:opacity-90 active:scale-95"
+                                        onClick={onCopy}
+                                        className="flex-1 flex min-w-[140px] items-center justify-center gap-2 rounded-lg h-12 px-4 bg-[#f425f4] text-white text-sm font-bold transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        disabled={!origin}
                                     >
                                         <FiCopy />
-                                        Copy Link
+                                        {copied ? "Copied" : "Copy Link"}
                                     </button>
                                 </div>
                             </div>
@@ -52,9 +90,7 @@ export default function WaitingRoom() {
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#f425f4] opacity-75" />
                                         <span className="relative inline-flex rounded-full h-3 w-3 bg-[#f425f4]" />
                                     </div>
-                                    <span className="font-semibold text-white/80">
-                                        3 Guests Connected
-                                    </span>
+                                    <span className="font-semibold text-white/80">3 Guests Connected</span>
                                 </div>
 
                                 <div className="flex -space-x-2">
@@ -73,17 +109,41 @@ export default function WaitingRoom() {
                     </div>
 
                     <div className="order-1 lg:order-2 flex flex-col items-center justify-center">
-                        <div className="relative p-8 bg-white rounded-2xl shadow-[0_0_40px_-10px_rgba(244,37,244,0.4)] group">
+                        <div className="relative p-8 bg-white rounded-2xl shadow-[0_0_50px_-18px_rgba(244,37,244,0.55)]">
                             <div className="absolute -top-4 -left-4 w-12 h-12 border-t-4 border-l-4 border-[#f425f4] rounded-tl-xl" />
                             <div className="absolute -top-4 -right-4 w-12 h-12 border-t-4 border-r-4 border-[#f425f4] rounded-tr-xl" />
                             <div className="absolute -bottom-4 -left-4 w-12 h-12 border-b-4 border-l-4 border-[#f425f4] rounded-bl-xl" />
                             <div className="absolute -bottom-4 -right-4 w-12 h-12 border-b-4 border-r-4 border-[#f425f4] rounded-br-xl" />
 
                             <div className="w-64 h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-xl bg-white grid place-items-center relative overflow-hidden">
-                                <div className="relative flex flex-col items-center gap-4 text-black">
-                                    {/* generated qr code will go here :3 */}
+                                <div
+                                    className="absolute inset-0 opacity-[0.06]"
+                                    style={{
+                                        backgroundImage:
+                                            "linear-gradient(90deg, #000 1px, transparent 1px), linear-gradient(#000 1px, transparent 1px)",
+                                        backgroundSize: "22px 22px",
+                                    }}
+                                />
+
+                                {qrUrl ? (
+                                    <img
+                                        src={qrUrl}
+                                        alt="Join room QR code"
+                                        className="relative w-[92%] h-[92%] object-contain"
+                                    />
+                                ) : (
+                                    <div className="relative text-black/60 font-mono text-sm">
+                                        Generating…
+                                    </div>
+                                )}
+
+                                <div className="absolute inset-0 pointer-events-none grid place-items-center">
+                                    <div className="h-12 w-12 rounded-full bg-white shadow-lg ring-2 ring-[#f425f4]/60 grid place-items-center">
+                                        <MdMicExternalOn className="text-[#f425f4] text-2xl" />
+                                    </div>
                                 </div>
                             </div>
+
                         </div>
 
                         <p className="mt-8 text-sm font-mono text-white/50 flex items-center gap-2">
