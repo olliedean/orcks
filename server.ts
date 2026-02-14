@@ -11,7 +11,22 @@ app.prepare().then(() => {
     const io = new Server(server);
 
     type GuestInfo = { name?: string; image?: string | null };
-    type Room = { name: string; host: string; guests: Map<string, GuestInfo> };
+
+    type QueueItem = {
+        id: string;
+        title: string;
+        artist: string;
+        coverUrl?: string;
+        addedBy?: string;
+        addedAt: number;
+    };
+
+    type Room = {
+        name: string;
+        host: string;
+        guests: Map<string, GuestInfo>;
+        queue: QueueItem[];
+    };
     type JoinPayload = string | { code: string; name?: string; image?: string | null };
 
     const rooms = new Map<string, Room>();
@@ -42,11 +57,72 @@ app.prepare().then(() => {
                 name: roomName,
                 host: socket.id,
                 guests: new Map(),
+                queue: [],
             });
             socket.join(roomCode);
             console.log(`Room created: ${roomCode} - ${roomName}`);
             callback(roomCode);
         });
+
+        socket.on(
+            "queue:get",
+            (roomCode: string, callback: (response: { success: boolean; queue?: QueueItem[]; error?: string }) => void) => {
+                const room = rooms.get(roomCode);
+                if (!room) {
+                    callback({ success: false, error: "Room not found" });
+                    return;
+                }
+
+                callback({ success: true, queue: room.queue });
+            }
+        );
+
+        socket.on(
+            "queue:add",
+            (
+                payload: {
+                    code: string;
+                    item: { id: string; title: string; artist: string; coverUrl?: string };
+                },
+                callback?: (response: { success: boolean; error?: string }) => void
+            ) => {
+                const roomCode = payload?.code;
+                const item = payload?.item;
+
+                if (!roomCode || typeof roomCode !== "string") {
+                    callback?.({ success: false, error: "Invalid room code" });
+                    return;
+                }
+
+                const room = rooms.get(roomCode);
+                if (!room) {
+                    callback?.({ success: false, error: "Room not found" });
+                    return;
+                }
+
+                if (!item || typeof item.id !== "string" || typeof item.title !== "string" || typeof item.artist !== "string") {
+                    callback?.({ success: false, error: "Invalid queue item" });
+                    return;
+                }
+
+                const queueItem: QueueItem = {
+                    id: item.id,
+                    title: item.title,
+                    artist: item.artist,
+                    coverUrl: typeof item.coverUrl === "string" ? item.coverUrl : undefined,
+                    addedBy: socket.id,
+                    addedAt: Date.now(),
+                };
+
+                room.queue.push(queueItem);
+
+                io.to(roomCode).emit("queue:update", {
+                    queue: room.queue,
+                });
+
+                callback?.({ success: true });
+            }
+        );
 
         socket.on("room:join", (payload: JoinPayload, callback) => {
             const ack = typeof callback === "function" ? callback : undefined;
