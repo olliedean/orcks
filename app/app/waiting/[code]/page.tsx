@@ -7,6 +7,10 @@ import { MdMicExternalOn } from "react-icons/md";
 import { useParams } from "next/navigation";
 import { useSocket } from "@/lib/socket-context";
 
+type JoinResponse =
+    | { success: true; room: { name: string; guestCount: number } }
+    | { success: false; error?: string };
+
 /* eslint-disable @next/next/no-img-element */
 
 export default function WaitingRoom() {
@@ -24,7 +28,7 @@ export default function WaitingRoom() {
     useEffect(() => {
         if (!roomCode) return;
 
-        socket.emit("room:join", roomCode, (response: any) => {
+        socket.emit("room:join", roomCode, (response: JoinResponse) => {
             if (response.success) {
                 setRoomName(response.room.name);
                 setGuestCount(response.room.guestCount);

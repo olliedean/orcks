@@ -151,7 +151,7 @@ export default function JoinPage() {
       (response: { success: boolean; error?: string }) => {
         setLoading(false);
         if (response.success) {
-          router.push(`/app/waiting/${formData.code.trim()}`);
+          router.push(`/app/remote/${formData.code.trim()}`);
         } else {
           setError(response.error || "Failed to join room");
         }
