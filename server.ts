@@ -40,6 +40,20 @@ app.prepare().then(() => {
     io.on("connection", (socket) => {
         console.log("a user connected");
 
+        function getSelfInfo(): GuestInfo {
+            const data = socket.data as { self?: GuestInfo };
+            if (data.self && (data.self.name || data.self.image !== undefined)) {
+                return data.self;
+            }
+
+            for (const room of rooms.values()) {
+                const info = room.guests.get(socket.id);
+                if (info) return info;
+            }
+
+            return { name: "Guest", image: null };
+        }
+
         socket.on("ping", (callback) => {
             callback();
         });
@@ -164,6 +178,9 @@ app.prepare().then(() => {
                     merged.image = guestImage;
                 }
                 room.guests.set(socket.id, merged);
+
+                const data = socket.data as { self?: GuestInfo };
+                data.self = merged;
             }
             
             socket.join(roomCode);
@@ -196,6 +213,10 @@ app.prepare().then(() => {
                     isHost: room.host === socket.id,
                 },
             });
+        });
+
+        socket.on("self:info:get", (callback) => {
+            callback(getSelfInfo());
         });
 
         socket.on("disconnect", () => {

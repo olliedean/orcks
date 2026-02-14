@@ -7,6 +7,11 @@ import { MdMicExternalOn } from "react-icons/md";
 import { FiUser } from "react-icons/fi";
 import { useSocket } from "@/lib/socket-context";
 
+type SelfInfo = {
+  name?: string;
+  image?: string | null;
+};
+
 type JoinResponse =
   | {
       success: true;
@@ -24,6 +29,7 @@ export default function RemoteAppLayout({ children }: { children: ReactNode }) {
 
   const [roomName, setRoomName] = useState<string | null>(null);
   const [roomError, setRoomError] = useState<string | null>(null);
+  const [selfInfo, setSelfInfo] = useState<SelfInfo | null>(null);
 
   useEffect(() => {
     if (!roomCode) return;
@@ -41,6 +47,10 @@ export default function RemoteAppLayout({ children }: { children: ReactNode }) {
     function onRoomClosed(payload: { reason?: string }) {
       setRoomError(payload?.reason === "host_disconnected" ? "Room closed" : "Room unavailable");
     }
+
+    socket.emit("self:info:get", (info: SelfInfo) => {
+      setSelfInfo(info);
+    });
 
     socket.on("room:closed", onRoomClosed);
     return () => {
@@ -71,7 +81,16 @@ export default function RemoteAppLayout({ children }: { children: ReactNode }) {
               className="size-10 flex items-center justify-center rounded-full bg-white/5 border border-white/10 hover:border-[#f425f4]/20 hover:text-[#f425f4] transition-colors"
               aria-label="Profile"
             >
-              <FiUser className="h-5 w-5" />
+              {typeof selfInfo?.image === "string" && selfInfo.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={selfInfo.image}
+                  alt={selfInfo.name ?? "Profile"}
+                  className="h-full w-full rounded-full object-cover"
+                />
+              ) : (
+                <FiUser className="h-5 w-5" />
+              )}
             </button>
           </div>
         </header>
